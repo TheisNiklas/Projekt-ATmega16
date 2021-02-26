@@ -27,8 +27,10 @@ ISR(TIMER1_COMPB_vect)
 	}
 }
 
-TimerError_t initTimer(uint16_t compareAValue, uint16_t compareBValue, TimerSettings_t timerSettings)
+Timer_Error_t Timer_init(uint16_t compareAValue, uint16_t compareBValue, Timer_Settings_t timerSettings)
 {
+	ClockSignal = timerSettings.ClockSignal;
+	
 	TCCR1A = 0b00000000;
 	TCCR1B = timerSettings.CTCMode << WGM12 | timerSettings.ClockSignal;
 	
@@ -41,7 +43,30 @@ TimerError_t initTimer(uint16_t compareAValue, uint16_t compareBValue, TimerSett
 	return NoError;
 }
 
-TimerError_t Timer_addInterrupt(enum TimerInterrupt_t interrupt, volatile uint8_t* irFlag)
+Timer_Error_t Timer_start()
+{
+	if (!InitFlag || ClockSignal == CSTimerStop)
+	{
+		return ErrorNoCSSet;
+	}
+	TCCR1B |= ClockSignal;
+	TCNT1 = 0;
+	return NoError;
+}
+
+Timer_Error_t Timer_stop()
+{
+	TCCR1B &= ~(CSTimerStop);
+	return NoError;
+}
+
+Timer_Error_t Timer_reset()
+{
+	TCNT1 = 0;
+	return NoError;
+}
+
+Timer_Error_t Timer_addInterrupt(enum Timer_Interrupt_t interrupt, volatile uint8_t* irFlag)
 {
 	TIMSK |= 1 << interrupt;
 	SREG |= 1 << SREG_I;
@@ -51,16 +76,16 @@ TimerError_t Timer_addInterrupt(enum TimerInterrupt_t interrupt, volatile uint8_
 	
 }
 
-TimerError_t Timer_removeInterrupt(enum TimerInterrupt_t interrupt)
+Timer_Error_t Timer_removeInterrupt(enum Timer_Interrupt_t interrupt)
 {
 	TIMSK &= ~(1 << interrupt);
 	return NoError;
 }
 
-TimerError_t Timer_calculateTimerSettings_s(uint16_t* compareAValue, TimerClockSignal_t* clockSignal, uint8_t seconds)
+Timer_Error_t Timer_calculateTimerSettings_s(uint16_t* compareAValue, Timer_ClockSignal_t* clockSignal, uint8_t seconds)
 {
 	uint16_t prescaler[5] = {1, 8, 64, 256, 1024};
-	TimerClockSignal_t clockSignals[5] = {CSSystemClock, CSSystemClockDiv8, CSSystemClockDiv64, CSSystemClockDiv256, CSSystemClockDiv1024};
+	Timer_ClockSignal_t clockSignals[5] = {CSSystemClock, CSSystemClockDiv8, CSSystemClockDiv64, CSSystemClockDiv256, CSSystemClockDiv1024};
 	uint8_t i = 0;
 	while ((F_CPU / prescaler[i]) * seconds >= 65536)
 	{
@@ -79,12 +104,12 @@ TimerError_t Timer_calculateTimerSettings_s(uint16_t* compareAValue, TimerClockS
 	return NoError;
 }
 
-TimerError_t Timer_calculateTimerSettings_ms(uint16_t* compareAValue, TimerClockSignal_t* clockSignal, uint8_t ms)
+Timer_Error_t Timer_calculateTimerSettings_ms(uint16_t* compareAValue, Timer_ClockSignal_t* clockSignal, uint8_t ms)
 {
 	uint16_t prescaler[5] = {1, 8, 64, 256, 1024};
-	TimerClockSignal_t clockSignals[5] = {CSSystemClock, CSSystemClockDiv8, CSSystemClockDiv64, CSSystemClockDiv256, CSSystemClockDiv1024};
+	Timer_ClockSignal_t clockSignals[5] = {CSSystemClock, CSSystemClockDiv8, CSSystemClockDiv64, CSSystemClockDiv256, CSSystemClockDiv1024};
 	uint8_t i = 0;
-	while ((F_CPU / prescaler[i]) * ms >= 65536)
+	while ((F_CPU / 1000 / prescaler[i]) * ms >= 65536)
 	{
 		if(i <= 4)
 		{
@@ -95,7 +120,7 @@ TimerError_t Timer_calculateTimerSettings_ms(uint16_t* compareAValue, TimerClock
 			//Error
 		}
 	}
-	*compareAValue = (F_CPU / prescaler[i]) * ms;
+	*compareAValue = (F_CPU / 1000 / prescaler[i]) * ms;
 	*clockSignal = clockSignals[i];
 
 	return NoError;

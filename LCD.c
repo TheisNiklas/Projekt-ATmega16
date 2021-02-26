@@ -6,7 +6,7 @@
  */ 
 #include "LCD.h"
 
-LCD_Error_t InitLCD(volatile uint8_t* port, enum LCD_CursorSetting cursorSetting)
+LCD_Error_t LCD_Init(volatile uint8_t* port, LCD_CursorSetting_t cursorSetting)
 {
 	LcdPort = port;
 	
@@ -46,7 +46,7 @@ LCD_Error_t LCD_4Bit(char x, char rs)
 	return LCD_NoError;
 }
 
-LCD_Error_t LCD_send(char *s)
+LCD_Error_t LCD_Send(char *s)
 {
 	while (*s)
 	{
@@ -129,16 +129,16 @@ LCD_Error_t LCD_WriteToDisplay()
 	return LCD_NoError;
 }
 
-void LCD_MoveUp()
+LCD_Error_t LCD_MoveUp()
 {
 	if (CurrentLine != 0) CurrentLine--;
 	LCD_WriteToDisplay();
-	return;
+	return LCD_NoError;
 }
 
-void LCD_MoveDown()
+LCD_Error_t LCD_MoveDown()
 {
 	if (CurrentLine < LineCount - 2) CurrentLine++;
 	LCD_WriteToDisplay();
-	return;
+	return LCD_NoError;
 }

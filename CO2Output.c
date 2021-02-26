@@ -9,12 +9,12 @@
 
 void SendLinesToLCD();
 
-void InitCO2Output(SensorData_t* sensorData, volatile uint8_t* Port, enum LCD_CursorSetting cursorSetting, enum CO2OutputAlignValueRight alignSetting)
+void CO2Output_Init(SensorData_t* sensorData, volatile uint8_t* Port, LCD_CursorSetting_t cursor, CO2Output_AlignValueRight_t align)
 {
-	InitLCD(Port, cursorSetting);
+	LCD_Init(Port, cursor);
 	SensorData = sensorData;
 	CurrentLine = 0;
-	AlignSetting = alignSetting;
+	AlignSetting = align;
 	//LCD_UpdateData((char*) &OutputData, MAX_CHAR_COUNT, 6);
 	//SendLinesToLCD();
 	CO2Output_UpdateData();
@@ -23,7 +23,9 @@ void InitCO2Output(SensorData_t* sensorData, volatile uint8_t* Port, enum LCD_Cu
 
 void CO2Output_UpdateData()
 {
-	sprintf(OutputData.co2Value, "CO2: %dppm", SensorData->co2_value_u16);
+	char tmp[20];
+	ConvertFloatToCharArray(tmp, SensorData->co2_value_u16);
+	sprintf(OutputData.co2Value, "CO2: %s ppm", tmp);
 	sprintf(OutputData.humidityValue, "Humidity: %d%%", SensorData->humidity_value_u16);
 	sprintf(OutputData.temperatureValue, "Temp: %dßC", SensorData->temperature_value_u16); //ß wegen ROM Code A00
 	sprintf(OutputData.firmwareVersion, "Firmware: %d", SensorData->firmware_version_u16);
@@ -35,6 +37,16 @@ void CO2Output_UpdateData()
 	LCD_UpdateData((char*) &OutputData, MAX_CHAR_COUNT, 6);
 	//SendLinesToLCD();
 	return;
+}
+
+void CO2Output_MoveUp()
+{
+	LCD_MoveUp();
+}
+
+void CO2Output_MoveDown()
+{
+	LCD_MoveDown();
 }
 
 void CO2Output_UpdateLEDs()

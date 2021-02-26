@@ -60,7 +60,8 @@
       <ToolOptions>
         <InterfaceProperties>
         </InterfaceProperties>
-        <InterfaceName>JTAG</InterfaceName>
+        <InterfaceName>
+        </InterfaceName>
       </ToolOptions>
       <ToolType>com.atmel.avrdbg.tool.simulator</ToolType>
       <ToolNumber>
@@ -190,6 +191,12 @@
       <SubType>compile</SubType>
     </Compile>
     <Compile Include="Timer.h">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="utils.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="utils.h">
       <SubType>compile</SubType>
     </Compile>
   </ItemGroup>

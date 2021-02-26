@@ -10,6 +10,7 @@
 #include <util/delay.h>
 #include "CO2Output.h"
 #include "Timer.h"
+#include "utils.h"
 
 #define setpin(port,bitnummer) port |= (1<<bitnummer)
 #define clrpin(port,bitnummer) port &= ~(1<<bitnummer)
@@ -46,18 +47,18 @@ int main(void)
 	
 	struct SensorData_t sensorData =
 	{
-		.co2_value_u16 = 350,
+		.co2_value_u16 = 300.5f,
 		.firmware_version_u16 = 12,
-		.humidity_value_u16 = 50,
-		.temperature_value_u16 = 26,
+		.humidity_value_u16 = 50.5,
+		.temperature_value_u16 = 26.4,
 		.MeasState_en = CO2_MEAS_RUNNING,
 		.new_data_available_u8 = 0,
 		.AutocalibMode_en = CO2_AUTOCAL_INACTIVE
 	};
 
-	InitCO2Output(&sensorData, &LCDPORT, CursorOff, NoAlign);
+	CO2Output_Init(&sensorData, &LCDPORT, CursorOff, NoAlign);
 	
-	struct TimerSettings_t timerSettings =
+	struct Timer_Settings_t timerSettings =
 	{
 		.CTCMode = CTCTopOCR1A,
 		.PWNCOM1A = NoPWM,
@@ -65,13 +66,22 @@ int main(void)
 	uint16_t CompA = 0;
 	Timer_calculateTimerSettings_s(&CompA, &(timerSettings.ClockSignal), 2);
 	
-	initTimer(CompA, 0, timerSettings);
+	Timer_init(CompA, 0, timerSettings);
 	Timer_addInterrupt(InterruptCompareA, &timerInterruptFlag);
+	
+	//TODO: InitSensor with Pointer
+	//CO2_InitSensor(&sensorData);
+	//Config
+	//StartMeasurement();
 	
 	while(1)
 	{
 		if (timerInterruptFlag)
 		{
+			//TODO: Werte abholen CO2_StartMeasurement();
+			//CO2_UpdateData();
+			
+			
 			CO2Output_UpdateData();
 			
 			if (timerLEDOutput)
@@ -90,12 +100,19 @@ int main(void)
 		buttonDown = BUTTONDOWN;
 		if ((buttonUp != buttonUp_before) && buttonUp == 1 && buttonDown == 0)
 		{
-			LCD_MoveUp();
+			//CO2Output_MoveUp();
+			LCD_Clear();
+			float deb = 230.5f;
+			char deb1[40];
+			
+			ConvertFloatToCharArray(deb1, deb);
+			
+			LCD_Write2Lines(deb1, NULL);
 		}
 		buttonUp_before = buttonUp;
 		if ((buttonDown != buttonDown_before) && buttonDown == 1 && buttonUp == 0)
 		{
-			LCD_MoveDown();
+			CO2Output_MoveDown();
 		}
 		buttonDown_before = buttonDown;
 	}
