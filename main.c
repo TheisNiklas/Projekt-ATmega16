@@ -8,9 +8,11 @@
 #include <avr/io.h>
 #include <stdio.h>
 #include <util/delay.h>
+#include <avr/pgmspace.h>
 #include "CO2Output.h"
 #include "Timer.h"
 #include "utils.h"
+#include "LCD.h"
 
 #define setpin(port,bitnummer) port |= (1<<bitnummer)
 #define clrpin(port,bitnummer) port &= ~(1<<bitnummer)
@@ -33,57 +35,52 @@ uint8_t buttonDown_before = 0;
 uint8_t timerInterruptFlag = 0;
 uint8_t timerLEDOutput = 0;
 
-//struct SensorData_t sensorData;
-
-void CallbackDataReady(void)
-{
-	return;
-}
-
 int main(void)
 {
-	LCDDDR = 0xff;
-	DDRD = 0b01110100;
+	DDRD = 0b01111100;
 	
 	struct SensorData_t sensorData =
 	{
-		.co2_value_u16 = 300.5f,
+		.co2_value_f = 1763.36f,
 		.firmware_version_u16 = 12,
-		.humidity_value_u16 = 50.5,
-		.temperature_value_u16 = 26.4,
+		.humidity_value_f = 50.5,
+		.temperature_value_f = 26.4,
 		.MeasState_en = CO2_MEAS_RUNNING,
-		.new_data_available_u8 = 0,
 		.AutocalibMode_en = CO2_AUTOCAL_INACTIVE
 	};
 
-	CO2Output_Init(&sensorData, &LCDPORT, CursorOff, NoAlign);
+	LCD_Settings_t lcdSettings =
+	{
+		.Cursor = CursorOff,
+		.Port = &LCDPORT,
+		.PortDDR = &LCDDDR,
+		.PortPIN = &PINB
+	};
+
+	CO2Output_Init(&sensorData, &lcdSettings, NoAlign);
 	
 	struct Timer_Settings_t timerSettings =
 	{
-		.CTCMode = CTCTopOCR1A,
-		.PWNCOM1A = NoPWM,
+		.CompareBValue = 0,
+		.CTCMode = CTCTopOCR1A
 	};
-	uint16_t CompA = 0;
-	Timer_calculateTimerSettings_s(&CompA, &(timerSettings.ClockSignal), 2);
+	Timer_calculateTimerSettings_s(&(timerSettings.CompareAValue), &(timerSettings.ClockSignal), 2);
 	
-	Timer_init(CompA, 0, timerSettings);
+	Timer_init(timerSettings);
 	Timer_addInterrupt(InterruptCompareA, &timerInterruptFlag);
 	
-	//TODO: InitSensor with Pointer
-	//CO2_InitSensor(&sensorData);
-	//Config
-	//StartMeasurement();
 	
 	while(1)
 	{
 		if (timerInterruptFlag)
 		{
-			//TODO: Werte abholen CO2_StartMeasurement();
-			//CO2_UpdateData();
+			uint8_t COError = CO2Output_UpdateData();
+			if (COError)
+			{
+				LCD_WriteError("CO2Output-Error", COError);
+			}
 			
-			
-			CO2Output_UpdateData();
-			
+			//debug section: LED
 			if (timerLEDOutput)
 			{
 				PORTD &= 0b11111011;
@@ -94,23 +91,19 @@ int main(void)
 				PORTD |= 0b00000100;
 				timerLEDOutput = 1;
 			}
+			//end debug section
+			
 			timerInterruptFlag = 0;
 		}
+		
 		buttonUp = BUTTONUP;
 		buttonDown = BUTTONDOWN;
 		if ((buttonUp != buttonUp_before) && buttonUp == 1 && buttonDown == 0)
 		{
-			//CO2Output_MoveUp();
-			LCD_Clear();
-			float deb = 230.5f;
-			char deb1[40];
-			
-			ConvertFloatToCharArray(deb1, deb);
-			
-			LCD_Write2Lines(deb1, NULL);
+			CO2Output_MoveUp();
 		}
 		buttonUp_before = buttonUp;
-		if ((buttonDown != buttonDown_before) && buttonDown == 1 && buttonUp == 0)
+		if ((buttonDown != buttonDown_before) && buttonUp == 0 && buttonDown == 1)
 		{
 			CO2Output_MoveDown();
 		}

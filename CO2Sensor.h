@@ -22,9 +22,9 @@ typedef enum CO2_MeasurementState_t CO2_MeasurementState_t;
 struct SensorData_t
 {
 	//uint8_t new_data_available_u8;
-	float co2_value_u16;
-	float humidity_value_u16;
-	float temperature_value_u16;
+	float co2_value_f;
+	float humidity_value_f;
+	float temperature_value_f;
 	CO2_AutocalibMode_t AutocalibMode_en;
 	CO2_MeasurementState_t MeasState_en;
 	uint16_t firmware_version_u16;
